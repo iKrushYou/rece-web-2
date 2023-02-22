@@ -2,15 +2,7 @@ import useLocalStorage from './useLocalStorage';
 import ReceiptItem from '../types/ReceiptItem';
 import Person from '../types/Person';
 import { indexArray, setify } from '../functions/utils';
-import React, {
-  createContext,
-  Dispatch,
-  FunctionComponent,
-  PropsWithChildren,
-  SetStateAction,
-  useContext,
-  useMemo
-} from 'react';
+import React, { createContext, Dispatch, FunctionComponent, PropsWithChildren, SetStateAction, useContext, useMemo } from 'react';
 import currency from 'currency.js';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -93,7 +85,10 @@ export const AppDataContextProvider: FunctionComponent<PropsWithChildren> = ({ c
   };
 
   const removeItem = (itemId: string) => {
-    setAppData((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== itemId) }));
+    setAppData((prev) => ({
+      ...prev,
+      items: prev.items.filter((item) => item.id !== itemId),
+    }));
   };
 
   const splitItem = (itemId: string) => {
@@ -106,7 +101,10 @@ export const AppDataContextProvider: FunctionComponent<PropsWithChildren> = ({ c
       name: item.name,
       cost: item.cost / splitCount,
     }));
-    setAppData((prev) => ({ ...prev, items: [...prev.items.filter((item) => item.id !== itemId), ...newItems] }));
+    setAppData((prev) => ({
+      ...prev,
+      items: [...prev.items.filter((item) => item.id !== itemId), ...newItems],
+    }));
   };
 
   const putPerson = (newPerson: Person) => {
@@ -122,7 +120,10 @@ export const AppDataContextProvider: FunctionComponent<PropsWithChildren> = ({ c
   };
 
   const removePerson = (personId: string) => {
-    setAppData((prev) => ({ ...prev, people: prev.people.filter((person) => person.id !== personId) }));
+    setAppData((prev) => ({
+      ...prev,
+      people: prev.people.filter((person) => person.id !== personId),
+    }));
   };
 
   const handleSetItemPerson = (itemId: string, personIds: string[], selected: boolean) => {
