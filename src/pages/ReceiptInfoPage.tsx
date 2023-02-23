@@ -1,30 +1,30 @@
-import React, { FunctionComponent } from 'react'
-import { ReceiptInfoPathProps, ReceiptInfoTabs, Routes } from '../core/BaseRouter'
-import { updateReceiptValue, useGetReceipt } from '../functions/firebase'
-import { ButtonBase, Container, TextField } from '@mui/material'
+import React, { FunctionComponent } from 'react';
+import { ReceiptInfoPathProps, ReceiptInfoTabs, Routes } from '../core/BaseRouter';
+import { updateReceiptValue, useGetReceipt } from '../functions/firebase';
+import { ButtonBase, Container, TextField } from '@mui/material';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import LoadingContainer from '../components/LoadingContainer'
-import Typography from '@mui/material/Typography'
-import { DateTime } from 'luxon'
-import Box from '@mui/material/Box'
-import useEditTextModal from '../components/useEditTextModal'
-import ReceiptInfoItemsTab from './ReceiptInfoItemsTab'
+import LoadingContainer from '../components/LoadingContainer';
+import Typography from '@mui/material/Typography';
+import { DateTime } from 'luxon';
+import Box from '@mui/material/Box';
+import useEditTextModal from '../components/useEditTextModal';
+import ReceiptInfoItemsTab from './ReceiptInfoItemsTab';
 import { Redirect, Route, Switch, useHistory, useParams } from 'react-router-dom';
-import ReceiptInfoPeopleTab from './ReceiptInfoPeopleTab'
+import ReceiptInfoPeopleTab from './ReceiptInfoPeopleTab';
 
 const ReceiptInfoPage: FunctionComponent = () => {
-  const { receiptId, tab } = useParams<ReceiptInfoPathProps>()
-  const history = useHistory()
+  const { receiptId, tab } = useParams<ReceiptInfoPathProps>();
+  const history = useHistory();
 
-  const { receipt, people, isLoading, subTotal } = useGetReceipt(receiptId)
+  const { receipt, people, isLoading, subTotal } = useGetReceipt(receiptId);
 
-  const dt = DateTime.fromMillis(receipt?.date ?? 0)
+  const dt = DateTime.fromMillis(receipt?.date ?? 0);
 
-  const { EditTextModal, showEditTextModal } = useEditTextModal()
+  const { EditTextModal, showEditTextModal } = useEditTextModal();
 
   return (
-    <Container sx={{ marginBottom: '50px' }}>
+    <Container sx={{ marginBottom: '160px' }}>
       <LoadingContainer isLoading={isLoading}>
         {receipt && (
           <Box>
@@ -43,18 +43,18 @@ const ReceiptInfoPage: FunctionComponent = () => {
                 {receipt.title}
               </Typography>
               <TextField
-                id='date'
-                label='Date'
-                type='date'
+                id="date"
+                label="Date"
+                type="date"
                 sx={{ width: 220 }}
                 InputLabelProps={{
                   shrink: true,
                 }}
                 value={dt.toFormat('yyyy-MM-dd')}
                 onChange={async (e) => {
-                  const newDate = DateTime.fromFormat(e.target.value, 'yyyy-MM-dd').toMillis()
-                  console.log(e.target.value, DateTime.fromFormat('yyyy-MM-dd', e.target.value), newDate)
-                  await updateReceiptValue(receiptId, 'date', newDate)
+                  const newDate = DateTime.fromFormat(e.target.value, 'yyyy-MM-dd').toMillis();
+                  console.log(e.target.value, DateTime.fromFormat('yyyy-MM-dd', e.target.value), newDate);
+                  await updateReceiptValue(receiptId, 'date', newDate);
                 }}
                 variant={'standard'}
               />
@@ -81,7 +81,7 @@ const ReceiptInfoPage: FunctionComponent = () => {
       </LoadingContainer>
       {EditTextModal}
     </Container>
-  )
-}
+  );
+};
 
-export default ReceiptInfoPage
+export default ReceiptInfoPage;

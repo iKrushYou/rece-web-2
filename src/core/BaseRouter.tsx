@@ -14,7 +14,7 @@ export type ReceiptInfoPathProps = {
   tab?: ReceiptInfoTab;
 };
 export const ReceiptInfoTabs = ['items', 'people'] as const;
-export type ReceiptInfoTab = typeof ReceiptInfoTabs[number];
+export type ReceiptInfoTab = (typeof ReceiptInfoTabs)[number];
 const RECEIPT_INFO_PATH = '/receipts/:receiptId/:tab?';
 const receiptInfo = {
   path: RECEIPT_INFO_PATH,

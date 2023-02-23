@@ -202,7 +202,11 @@ export const updateChargeValueByPct = (receiptId: string, charge: ChargeType, pe
   return receiptsRef.child(receiptId).child(charge).set(currency(value).value);
 };
 
-export const updateReceiptValue = (receiptId: string, key: ChargeType | 'title' | 'total' | 'date', value: string | number): Promise<void> => {
+export const updateReceiptValue = (
+  receiptId: string,
+  key: ChargeType | 'title' | 'total' | 'date',
+  value: string | number,
+): Promise<void> => {
   return receiptsRef.child(receiptId).child(key).set(value);
 };
 

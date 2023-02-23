@@ -1,11 +1,12 @@
 import Box from '@mui/material/Box';
-import { Checkbox, IconButton, styled, useTheme } from '@mui/material';
+import { Avatar, Checkbox, Container, Fab, IconButton, ListItemText, ListSubheader, styled, useTheme } from '@mui/material';
 import Table from '@mui/material/Table';
 import React, { FunctionComponent } from 'react';
 import useEditTextModal from '../components/useEditTextModal';
 import {
   getItemQuantityForPerson,
   getPersonCountForItem,
+  PersonEntity,
   receiptsRef,
   updateChargeValue,
   updateChargeValueByPct,
@@ -24,15 +25,25 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import Typography from '@mui/material/Typography';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddItemRow from './components/AddItemRow';
+import useAddItemModal from './components/UseAddItemModal';
 import SpacerRow from './components/SpacerRow';
-import { amber } from '@mui/material/colors';
 import { useParams } from 'react-router-dom';
 import { ReceiptInfoPathProps } from '../core/BaseRouter';
+import clsx from 'clsx';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import { nameToInitials } from '../functions/utils';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Collapse from '@mui/material/Collapse';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import StarBorder from '@mui/icons-material/StarBorder';
+import ListItem from '@mui/material/ListItem';
 
-const warningBgColor = `${amber[100]}80`;
+const highlightedRowColor = `#fff8d6`;
 
-const StyledTable = styled(Table)(() => ({
+const StyledTable = styled(Table)(({ theme }) => ({
   whiteSpace: 'nowrap',
   // backgroundColor: "white",
   position: 'relative',
@@ -42,14 +53,15 @@ const StyledTable = styled(Table)(() => ({
   },
   '.sticky-column': {
     position: 'sticky',
-    backgroundColor: 'white',
-    zIndex: 1,
+    zIndex: 3,
     left: 0,
+  },
+  '.sticky-column-bg': {
+    backgroundColor: theme.palette.background.paper,
   },
   '.sticky-header': {
     position: 'sticky',
-    backgroundColor: 'white',
-    zIndex: 1,
+    zIndex: 2,
     top: 0,
   },
   '& td': {
@@ -60,11 +72,11 @@ const StyledTable = styled(Table)(() => ({
 }));
 
 const getVenmoPaymentLink = ({
-                               txn = 'charge',
-                               user = '',
-                               amount,
-                               note = 'Split by Rece',
-                             }: {
+  txn = 'charge',
+  user = '',
+  amount,
+  note = 'Split by Rece',
+}: {
   txn?: 'pay' | 'charge';
   user?: string;
   amount: number;
@@ -78,32 +90,24 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
 
   const { EditTextModal, showEditTextModal } = useEditTextModal();
 
-  const {
-    receipt,
-    items,
-    subTotal,
-    total,
-    people,
-    setPersonItemQuantity,
-    personSubTotalMap,
-    getChargeForPerson,
-    getTotalForPerson,
-  } =
+  const { receipt, items, subTotal, total, people, setPersonItemQuantity, personSubTotalMap, getChargeForPerson, getTotalForPerson } =
     useGetReceipt(receiptId);
 
+  const { showAddItemModal, AddItemModal } = useAddItemModal({ receipt });
+
   const removeItem = async (itemId: string) => {
-    if (!confirm('Are you sure you\'d like to remove this item?')) return;
+    if (!confirm("Are you sure you'd like to remove this item?")) return;
     if (!receipt || !itemId) return;
     await receiptsRef.child(receipt.id).child('items').child(itemId).remove();
   };
 
   return (
-    <>
-      <TableContainer component={Paper}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+      <TableContainer component={Paper} sx={{ alignSelf: 'center' }}>
         <StyledTable>
           <TableHead>
             <TableRow>
-              <TableCell>{'Item'}</TableCell>
+              <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>{'Item'}</TableCell>
               <TableCell align={'right'} width={'1%'}>
                 {'Quantity'}
               </TableCell>
@@ -112,8 +116,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
               </TableCell>
               {people &&
                 Object.values(people).map((person) => (
-                  <TableCell key={person.id} align={'center'} width={'1%'} sx={{ minWidth: '100px' }}
-                             className={'sticky-header'}>
+                  <TableCell key={person.id} align={'center'} width={'1%'} sx={{ minWidth: '100px' }} className={'sticky-header'}>
                     {person.name}
                   </TableCell>
                 ))}
@@ -121,7 +124,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {items &&
+            {items && items.length > 0 ? (
               Object.values(items).map((item) => {
                 const isItemFull = getPersonCountForItem(receipt, item.id) >= item.quantity;
 
@@ -129,13 +132,10 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                   <TableRow
                     key={item.id}
                     sx={{
-                      '&:last-child td, &:last-child th': { border: 0 },
-                      backgroundColor: !isItemFull ? warningBgColor : undefined,
+                      backgroundColor: !isItemFull ? highlightedRowColor : undefined,
                     }}
                   >
                     <TableCellButton
-                      component='th'
-                      scope='row'
                       onClick={() =>
                         showEditTextModal({
                           setValue: (value) => updateReceiptItemValue(receiptId, item.id, 'name', value),
@@ -143,13 +143,14 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                           value: item.name,
                         })
                       }
-                      className={'sticky-column'}
+                      className={clsx('sticky-column')}
+                      sx={{
+                        backgroundColor: !isItemFull ? `${highlightedRowColor}` : 'white',
+                      }}
                     >
                       {item.name}
                     </TableCellButton>
                     <TableCellButton
-                      component='th'
-                      scope='row'
                       align={'right'}
                       onClick={() =>
                         showEditTextModal({
@@ -162,8 +163,6 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                       {item.quantity}
                     </TableCellButton>
                     <TableCellButton
-                      component='th'
-                      scope='row'
                       align={'right'}
                       onClick={() =>
                         showEditTextModal({
@@ -199,13 +198,21 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                                 >
                                   <RemoveIcon />
                                 </IconButton>
-                                <Typography sx={personItemQuantity > 0 ? {
-                                  bgcolor: theme.palette.primary.main,
-                                  color: 'white',
-                                  px: '6px',
-                                  mx: '-2px',
-                                  borderRadius: '4px',
-                                } : undefined}>{JSON.stringify(personItemQuantity)}</Typography>
+                                <Typography
+                                  sx={
+                                    personItemQuantity > 0
+                                      ? {
+                                          bgcolor: theme.palette.primary.main,
+                                          color: 'white',
+                                          px: '6px',
+                                          mx: '-2px',
+                                          borderRadius: '4px',
+                                        }
+                                      : undefined
+                                  }
+                                >
+                                  {JSON.stringify(personItemQuantity)}
+                                </Typography>
                                 <IconButton
                                   size={'small'}
                                   onClick={() => setPersonItemQuantity(person.id, item.id, personItemQuantity + 1)}
@@ -230,10 +237,10 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                           </TableCell>
                         );
                       })}
-                    <TableCell align='right'>
+                    <TableCell align="right">
                       <IconButton
                         size={'small'}
-                        edge='end'
+                        edge="end"
                         onClick={() => removeItem(item.id)}
                         sx={{
                           margin: '-8px',
@@ -244,117 +251,157 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                     </TableCell>
                   </TableRow>
                 );
-              })}
-            <AddItemRow receipt={receipt} />
-            <SpacerRow />
-            <TableRow>
-              <TableCell className={'sticky-column'} />
-              <TableCell colSpan={2} />
-              {people &&
-                Object.values(people).map((person) => (
-                  <TableCell key={person.id} align={'right'} sx={{ position: 'sticky', top: 0 }}>
-                    {person.name}
-                  </TableCell>
-                ))}
-            </TableRow>
-            <TableRow>
-              <TableCell className={'sticky-column'}>Sub Total</TableCell>
-              <TableCell />
-              <TableCell align={'right'}>{currency(subTotal).format()}</TableCell>
-              {people.map((person) => (
-                <TableCell key={person.id} align={'right'}>
-                  {currency(personSubTotalMap[person.id]).format()}
+              })
+            ) : (
+              <TableRow>
+                <TableCell colSpan={100}>
+                  <Typography sx={{ textAlign: 'center', p: '20px' }}>There aren't any items added to this receipt yet.</Typography>
                 </TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell className={'sticky-column'}>Tax</TableCell>
-              <TableCellButton
-                component='th'
-                scope='row'
-                align={'right'}
-                onClick={() =>
-                  showEditTextModal({
-                    setValue: (value) => updateChargeValueByPct(receiptId, 'taxCost', value, subTotal),
-                    title: 'Edit Tax Percentage',
-                    value: String(((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
-                  })
-                }
-              >
-                {((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
-              </TableCellButton>
-              <TableCellButton
-                component='th'
-                scope='row'
-                align={'right'}
-                onClick={() =>
-                  showEditTextModal({
-                    setValue: (value) => updateChargeValue(receiptId, 'taxCost', value),
-                    title: 'Edit Tax',
-                    value: String(receipt.taxCost),
-                  })
-                }
-              >
-                {currency(receipt.taxCost).format()}
-              </TableCellButton>
-              {people.map((person) => (
-                <TableCell key={person.id} align={'right'}>
-                  {currency(getChargeForPerson('taxCost', person.id)).format()}
-                </TableCell>
-              ))}
-            </TableRow>
-            <TableRow>
-              <TableCell className={'sticky-column'}>Tip</TableCell>
-              <TableCellButton
-                component='th'
-                scope='row'
-                align={'right'}
-                onClick={() =>
-                  showEditTextModal({
-                    setValue: (value) => updateChargeValueByPct(receiptId, 'tipCost', value, subTotal),
-                    title: 'Edit Tip Percentage',
-                    value: String(((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
-                  })
-                }
-              >
-                {((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
-              </TableCellButton>
-              <TableCellButton
-                component='th'
-                scope='row'
-                align={'right'}
-                onClick={() =>
-                  showEditTextModal({
-                    setValue: (value) => updateChargeValue(receiptId, 'tipCost', value),
-                    title: 'Edit Tip',
-                    value: String(receipt.tipCost),
-                  })
-                }
-              >
-                {currency(receipt.tipCost).format()}
-              </TableCellButton>
-              {people.map((person) => (
-                <TableCell key={person.id} align={'right'}>
-                  {currency(getChargeForPerson('tipCost', person.id)).format()}
-                </TableCell>
-              ))}
-            </TableRow>
-            <SpacerRow />
-            <TableRow>
-              <TableCell className={'sticky-column'}>Total</TableCell>
-              <TableCell />
-              <TableCell align={'right'}>{currency(total).format()}</TableCell>
-              {people.map((person) => (
-                <TableCell key={person.id} align={'right'}>
-                  {currency(getTotalForPerson(person.id)).format()}
-                </TableCell>
-              ))}
-            </TableRow>
+              </TableRow>
+            )}
           </TableBody>
         </StyledTable>
       </TableContainer>
+      <Container maxWidth={'sm'} disableGutters>
+        <Box component={Paper}>
+          <StyledTable sx={{ width: '100%' }}>
+            <TableBody>
+              <TableRow>
+                <TableCell className={clsx('sticky-column', 'sticky-column-bg')} sx={{ width: '30%' }}>
+                  Sub Total
+                </TableCell>
+                <TableCell sx={{ width: '35%' }} />
+                <TableCell align={'right'} sx={{ width: '35%' }}>
+                  {currency(subTotal).format()}
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Tax</TableCell>
+                <TableCellButton
+                  align={'right'}
+                  onClick={() =>
+                    showEditTextModal({
+                      setValue: (value) => updateChargeValueByPct(receiptId, 'taxCost', value, subTotal),
+                      title: 'Edit Tax Percentage',
+                      value: String(((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
+                    })
+                  }
+                >
+                  {((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
+                </TableCellButton>
+                <TableCellButton
+                  align={'right'}
+                  onClick={() =>
+                    showEditTextModal({
+                      setValue: (value) => updateChargeValue(receiptId, 'taxCost', value),
+                      title: 'Edit Tax',
+                      value: String(receipt.taxCost),
+                    })
+                  }
+                >
+                  {currency(receipt.taxCost).format()}
+                </TableCellButton>
+              </TableRow>
+              <TableRow>
+                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Tip</TableCell>
+                <TableCellButton
+                  align={'right'}
+                  onClick={() =>
+                    showEditTextModal({
+                      setValue: (value) => updateChargeValueByPct(receiptId, 'tipCost', value, subTotal),
+                      title: 'Edit Tip Percentage',
+                      value: String(((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
+                    })
+                  }
+                >
+                  {((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
+                </TableCellButton>
+                <TableCellButton
+                  align={'right'}
+                  onClick={() =>
+                    showEditTextModal({
+                      setValue: (value) => updateChargeValue(receiptId, 'tipCost', value),
+                      title: 'Edit Tip',
+                      value: String(receipt.tipCost),
+                    })
+                  }
+                >
+                  {currency(receipt.tipCost).format()}
+                </TableCellButton>
+              </TableRow>
+              <SpacerRow />
+              <TableRow>
+                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Total</TableCell>
+                <TableCell />
+                <TableCell align={'right'}>{currency(total).format()}</TableCell>
+              </TableRow>
+            </TableBody>
+          </StyledTable>
+        </Box>
+      </Container>
+      <Container maxWidth={'sm'} disableGutters>
+        <Paper>
+          <List
+            sx={{ width: '100%', bgcolor: 'background.paper' }}
+            component="nav"
+            aria-labelledby="nested-list-subheader"
+            subheader={
+              <ListSubheader component="div" id="nested-list-subheader">
+                Individual Totals
+              </ListSubheader>
+            }
+          >
+            {people.map((person) => (
+              <PersonTotalListItem person={person} key={person.id} receiptId={receiptId} />
+            ))}
+          </List>
+        </Paper>
+      </Container>
+      <Fab color="primary" aria-label="add" sx={{ position: 'fixed', bottom: '40px', right: '40px' }} onClick={() => showAddItemModal()}>
+        <AddIcon />
+      </Fab>
       {EditTextModal}
-    </>
+      {AddItemModal}
+    </Box>
+  );
+};
+
+const PersonTotalListItem: FunctionComponent<{ person: PersonEntity; receiptId: string }> = ({ person, receiptId }) => {
+  const { receipt, items, subTotal, total, people, setPersonItemQuantity, personSubTotalMap, getChargeForPerson, getTotalForPerson } =
+    useGetReceipt(receiptId);
+
+  const [open, setOpen] = React.useState(false);
+
+  const handleClick = () => {
+    setOpen(!open);
+  };
+
+  return (
+    <React.Fragment key={person.id}>
+      <ListItemButton onClick={handleClick}>
+        <ListItemAvatar>
+          <Avatar>{nameToInitials(person.name)}</Avatar>
+        </ListItemAvatar>
+        <ListItemText primary={person.name} secondary={currency(getTotalForPerson(person.id)).format()} />
+        {open ? <ExpandLess /> : <ExpandMore />}
+      </ListItemButton>
+      <Collapse in={open} timeout="auto" unmountOnExit>
+        <List component="div" disablePadding>
+          <ListItem sx={{ pl: 4, display: 'flex' }}>
+            <Typography sx={{ flex: 1 }}>Sub Total</Typography>
+            <Typography>{currency(personSubTotalMap[person.id]).format()}</Typography>
+          </ListItem>
+          <ListItem sx={{ pl: 4, display: 'flex' }}>
+            <Typography sx={{ flex: 1 }}>Tax</Typography>
+            <Typography>{currency(getChargeForPerson('taxCost', person.id)).format()}</Typography>
+          </ListItem>
+          <ListItem sx={{ pl: 4, display: 'flex' }}>
+            <Typography sx={{ flex: 1 }}>Tip</Typography>
+            <Typography>{currency(getChargeForPerson('tipCost', person.id)).format()}</Typography>
+          </ListItem>
+        </List>
+      </Collapse>
+    </React.Fragment>
   );
 };
 

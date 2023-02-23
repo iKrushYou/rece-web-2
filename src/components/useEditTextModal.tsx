@@ -1,26 +1,25 @@
-import React, { FunctionComponent, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Button, Card, CardContent, Modal, TextField } from '@mui/material'
-import Typography from '@mui/material/Typography'
-import Box from '@mui/material/Box'
+import React, { FunctionComponent, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Button, Card, CardContent, Modal, TextField } from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 type UseEditTextModalShowProps = {
-  value: string
-  setValue: (value: string) => void
-  title: string
-}
+  value: string;
+  setValue: (value: string) => void;
+  title: string;
+};
 const useEditTextModal = () => {
   const [state, setState] = useState<UseEditTextModalShowProps & { open: boolean }>({
     open: false,
     value: '',
     // eslint-disable-next-line @typescript-eslint/no-empty-function
-    setValue: (value) => {
-    },
+    setValue: (value) => {},
     title: '',
-  })
+  });
 
   const setOpen = (value: boolean) => {
-    setState((prev) => ({ ...prev, open: value }))
-  }
+    setState((prev) => ({ ...prev, open: value }));
+  };
 
   const showEditTextModal = ({ value, setValue, title }: UseEditTextModalShowProps) => {
     setState({
@@ -28,26 +27,25 @@ const useEditTextModal = () => {
       value,
       setValue,
       title,
-    })
-  }
+    });
+  };
 
   const Modal = (
-    <EditTextModal open={state.open} handleClose={() => setOpen(false)} title={state.title} value={state.value}
-                   setValue={state.setValue} />
-  )
+    <EditTextModal open={state.open} handleClose={() => setOpen(false)} title={state.title} value={state.value} setValue={state.setValue} />
+  );
 
-  return { EditTextModal: Modal, showEditTextModal }
-}
+  return { EditTextModal: Modal, showEditTextModal };
+};
 
-export default useEditTextModal
+export default useEditTextModal;
 
 const EditTextModal: FunctionComponent<{ open: boolean; handleClose: () => void } & UseEditTextModalShowProps> = ({
-                                                                                                                    open,
-                                                                                                                    handleClose,
-                                                                                                                    title,
-                                                                                                                    value,
-                                                                                                                    setValue,
-                                                                                                                  }) => {
+  open,
+  handleClose,
+  title,
+  value,
+  setValue,
+}) => {
   const style = {
     position: 'absolute',
     top: '50%',
@@ -56,38 +54,38 @@ const EditTextModal: FunctionComponent<{ open: boolean; handleClose: () => void 
     width: 'calc(100% - 20px)',
     maxWidth: '600px',
     boxShadow: 24,
-  }
+  };
 
-  const fieldRef = useRef<HTMLInputElement>()
-  const [fieldValue, setFieldValue] = useState('')
-  const [valueSet, setValueSet] = useState(false)
+  const fieldRef = useRef<HTMLInputElement>();
+  const [fieldValue, setFieldValue] = useState('');
+  const [valueSet, setValueSet] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setFieldValue(value)
-      setValueSet(true)
+      setFieldValue(value);
+      setValueSet(true);
     } else {
-      setFieldValue('')
-      setValueSet(false)
+      setFieldValue('');
+      setValueSet(false);
     }
-  }, [value, open])
+  }, [value, open]);
 
   useLayoutEffect(() => {
     if (valueSet && fieldRef.current) {
-      fieldRef.current.setSelectionRange(0, fieldRef.current.value.length)
+      fieldRef.current.setSelectionRange(0, fieldRef.current.value.length);
     }
-  }, [valueSet])
+  }, [valueSet]);
 
   const handleSave = () => {
-    setValue(fieldValue)
-    handleClose()
-  }
+    setValue(fieldValue);
+    handleClose();
+  };
 
   return (
     <Modal open={open} onClose={handleClose}>
       <Card sx={style}>
         <CardContent>
-          <Typography variant='h6' component='h2' sx={{ mb: '20px' }}>
+          <Typography variant="h6" component="h2" sx={{ mb: '20px' }}>
             {title}
           </Typography>
           <TextField
@@ -99,7 +97,7 @@ const EditTextModal: FunctionComponent<{ open: boolean; handleClose: () => void 
             autoFocus
             onKeyDown={(event) => {
               if (['Enter'].includes(event.code)) {
-                handleSave()
+                handleSave();
               }
             }}
           />
@@ -119,5 +117,5 @@ const EditTextModal: FunctionComponent<{ open: boolean; handleClose: () => void 
         </CardContent>
       </Card>
     </Modal>
-  )
-}
+  );
+};

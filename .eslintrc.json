@@ -23,14 +23,20 @@
     "prettier"
   ],
   "rules": {
-    "react/react-in-jsx-scope": "off",
-    "camelcase": "error",
-    "spaced-comment": "error",
-    "quotes": [
-      "error",
-      "single"
+    // note you must disable the base rule as it can report incorrect errors
+    "no-use-before-define": "off",
+    "no-console": 1,
+    "react/react-in-jsx-scope": 0,
+    "react/jsx-key": 2,
+    "react/prop-types": 0,
+    "react/display-name": 0,
+    "react/no-unescaped-entities": 0,
+    "@typescript-eslint/no-use-before-define": ["off"],
+    "@typescript-eslint/no-unused-vars": [
+      1,
+      { "varsIgnorePattern": "^(React|_)", "argsIgnorePattern": "^_", "ignoreRestSiblings": true }
     ],
-    "no-duplicate-imports": "error"
+    "@typescript-eslint/no-empty-function": 1
   },
   "settings": {
     "import/resolver": {
