@@ -12,6 +12,9 @@ import Box from '@mui/material/Box';
 import AddIcon from '@mui/icons-material/Add';
 import useEditTextModal from '../components/useEditTextModal';
 import { useHistory } from 'react-router-dom';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
+import currency from 'currency.js';
 
 const ReceiptsPage: FunctionComponent = () => {
   const history = useHistory();
@@ -31,27 +34,26 @@ const ReceiptsPage: FunctionComponent = () => {
   };
 
   return (
-    <Container>
+    <Container maxWidth={'xs'}>
       <LoadingContainer isLoading={isLoading}>
-        <Box style={{ display: 'flex', justifyContent: 'center' }}>
-          <Box
-            style={{
-              display: 'flex',
-              flex: 1,
-              flexDirection: 'column',
-              maxWidth: 600,
-              gap: 10,
-            }}
-          >
-            <Typography variant={'h3'} sx={{ mb: 2 }}>
-              Receipts
-            </Typography>
-            <List sx={{ bgcolor: 'background.paper' }}>
+        <Box
+          style={{
+            display: 'flex',
+            flex: 1,
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <Typography variant={'h3'} sx={{ mb: 2 }}>
+            Receipts
+          </Typography>
+          <Paper>
+            <List>
               {receiptsSorted.map((receipt) => (
                 <ReceiptInfoRow key={receipt.id} receipt={receipt} />
               ))}
             </List>
-          </Box>
+          </Paper>
         </Box>
       </LoadingContainer>
       <Fab
@@ -76,8 +78,10 @@ const ReceiptInfoRow: FunctionComponent<{ receipt: ReceiptEntity }> = ({ receipt
       <ListItem disablePadding>
         <ListItemButton>
           <ListItemText primary={receipt.title} secondary={dt.toLocaleString(DateTime.DATE_MED)} />
+          <Typography>{currency(receipt.total).format()}</Typography>
         </ListItemButton>
       </ListItem>
+      <Divider />
     </UnstyledLink>
   );
 };

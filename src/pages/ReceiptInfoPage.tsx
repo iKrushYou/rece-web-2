@@ -1,6 +1,6 @@
 import React, { FunctionComponent } from 'react';
 import { ReceiptInfoPathProps, ReceiptInfoTabs, Routes } from '../core/BaseRouter';
-import { updateReceiptValue, useGetReceipt } from '../functions/firebase';
+import { updateReceiptProperty, useGetReceipt } from '../functions/firebase';
 import { ButtonBase, Container, TextField } from '@mui/material';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
@@ -12,13 +12,15 @@ import useEditTextModal from '../components/useEditTextModal';
 import ReceiptInfoItemsTab from './ReceiptInfoItemsTab';
 import { Redirect, Route, Switch, useHistory, useParams } from 'react-router-dom';
 import ReceiptInfoPeopleTab from './ReceiptInfoPeopleTab';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import LockIcon from '@mui/icons-material/Lock';
+import IconButton from '@mui/material/IconButton';
 
 const ReceiptInfoPage: FunctionComponent = () => {
   const { receiptId, tab } = useParams<ReceiptInfoPathProps>();
   const history = useHistory();
 
-  const { receipt, people, isLoading, subTotal } = useGetReceipt(receiptId);
-
+  const { receipt, isLoading } = useGetReceipt(receiptId);
   const dt = DateTime.fromMillis(receipt?.date ?? 0);
 
   const { EditTextModal, showEditTextModal } = useEditTextModal();
@@ -29,19 +31,26 @@ const ReceiptInfoPage: FunctionComponent = () => {
         {receipt && (
           <Box>
             <Box sx={{ marginBottom: '20px' }}>
-              <Typography variant={'h3'} sx={{ position: 'relative' }}>
-                <ButtonBase
-                  sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                  onClick={() =>
-                    showEditTextModal({
-                      setValue: (value) => updateReceiptValue(receiptId, 'title', value),
-                      title: 'Edit Receipt Name',
-                      value: receipt.title,
-                    })
-                  }
-                />
-                {receipt.title}
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant={'h3'} sx={{ flex: 1, position: 'relative' }}>
+                  <ButtonBase
+                    sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    onClick={() =>
+                      showEditTextModal({
+                        setValue: (value) => updateReceiptProperty(receiptId, 'title', value),
+                        title: 'Edit Receipt Name',
+                        value: receipt.title,
+                      })
+                    }
+                  />
+                  {receipt.title}
+                </Typography>
+                <Box>
+                  <IconButton onClick={() => updateReceiptProperty(receiptId, 'locked', !receipt.locked)}>
+                    {receipt.locked ? <LockIcon /> : <LockOpenIcon />}
+                  </IconButton>
+                </Box>
+              </Box>
               <TextField
                 id="date"
                 label="Date"
@@ -53,8 +62,7 @@ const ReceiptInfoPage: FunctionComponent = () => {
                 value={dt.toFormat('yyyy-MM-dd')}
                 onChange={async (e) => {
                   const newDate = DateTime.fromFormat(e.target.value, 'yyyy-MM-dd').toMillis();
-                  console.log(e.target.value, DateTime.fromFormat('yyyy-MM-dd', e.target.value), newDate);
-                  await updateReceiptValue(receiptId, 'date', newDate);
+                  await updateReceiptProperty(receiptId, 'date', newDate);
                 }}
                 variant={'standard'}
               />

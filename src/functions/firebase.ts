@@ -30,6 +30,8 @@ export type ReceiptEntity = {
   itemToPersonQuantityMap?: Record<string, Record<string, { quantity: number }>>;
   taxCost: number;
   tipCost: number;
+  locked?: boolean;
+  fees?: { name: string; amount: number }[];
 };
 
 export type ItemEntity = {
@@ -71,6 +73,11 @@ export const useGetReceipts = (): {
 
 export type ChargeType = 'taxCost' | 'tipCost';
 
+type PersonSubTotalMap = Record<
+  string,
+  { subTotal: number; items: Record<string, { subTotal: number; shares: number; totalShares: number }> }
+>;
+
 export type UseGetReceiptResponse = {
   receipt: ReceiptEntity;
   items: Array<ItemEntity>;
@@ -79,7 +86,8 @@ export type UseGetReceiptResponse = {
   subTotal: number;
   total: number;
   setPersonItemQuantity: (personId: string, itemId: string, quantity: number) => Promise<void>;
-  personSubTotalMap: Record<string, number>;
+  personSubTotalMap: PersonSubTotalMap;
+  getItemCostForPerson: (personId: string, itemId: string) => PersonSubTotalMap[string]['items'][string];
   getChargeForPerson: (charge: ChargeType, personId: string) => number;
   getTotalForPerson: (personId: string) => number;
 };
@@ -97,6 +105,7 @@ export const useGetReceipt = (id: string): UseGetReceiptResponse => {
     tipCost: 0,
     title: '',
     total: 0,
+    locked: false,
   });
 
   useEffect(() => {
@@ -140,32 +149,49 @@ export const useGetReceipt = (id: string): UseGetReceiptResponse => {
       .update({ quantity: Math.max(quantity, 0) });
   };
 
-  const personSubTotalMap = useMemo<Record<string, number>>(() => {
-    const personSubTotalMap: Record<string, number> = {};
+  const personSubTotalMap = useMemo(() => {
+    const personSubTotalMap: PersonSubTotalMap = {};
+
     for (const person of people) {
-      personSubTotalMap[person.id] = Object.entries(receipt.personToItemQuantityMap?.[person.id] ?? {}).reduce(
-        (sum, [itemId, { quantity }]) => {
-          const item = receipt.items?.[itemId];
-          const numShares = Object.values(receipt.itemToPersonQuantityMap?.[itemId] ?? {}).reduce((sum, { quantity }) => sum + quantity, 0);
-          if (!item) return sum;
-          const proportionalCost = quantity > 0 && numShares > 0 ? (quantity / numShares) * item.cost : 0;
-          return sum + proportionalCost;
-        },
-        0,
-      );
+      personSubTotalMap[person.id] = { subTotal: 0, items: {} };
+      Object.entries(receipt.personToItemQuantityMap?.[person.id] ?? {}).forEach(([itemId, { quantity }]) => {
+        const item = receipt.items?.[itemId];
+        if (!item) return;
+        const numShares = Object.values(receipt.itemToPersonQuantityMap?.[itemId] ?? {}).reduce((sum, { quantity }) => sum + quantity, 0);
+        const proportionalCost = quantity > 0 && numShares > 0 ? (quantity / numShares) * item.cost : 0;
+
+        personSubTotalMap[person.id].items[itemId] = {
+          subTotal: proportionalCost,
+          shares: quantity,
+          totalShares: numShares,
+        };
+
+        personSubTotalMap[person.id].subTotal += proportionalCost;
+      });
     }
     return personSubTotalMap;
   }, [receipt]);
 
   const total = useMemo(() => subTotal + (receipt?.tipCost ?? 0) + (receipt?.taxCost ?? 0), [subTotal, receipt]);
 
+  useEffect(() => {
+    if (receipt.total === total) return;
+    receiptsRef.child(id).child('total').set(currency(total).value);
+  }, [total]);
+
   const getChargeForPerson = (charge: ChargeType, personId: string) =>
-    currency(personSubTotalMap[personId])
+    currency((personSubTotalMap[personId] ?? {}).subTotal)
       .divide(subTotal > 0 ? subTotal : 1)
       .multiply(receipt?.[charge] ?? 0).value;
 
   const getTotalForPerson = (personId: string) =>
-    currency(personSubTotalMap[personId]).add(getChargeForPerson('taxCost', personId)).add(getChargeForPerson('tipCost', personId)).value;
+    currency((personSubTotalMap[personId] ?? {}).subTotal)
+      .add(getChargeForPerson('taxCost', personId))
+      .add(getChargeForPerson('tipCost', personId)).value;
+
+  const getItemCostForPerson = (personId: string, itemId: string) => {
+    return personSubTotalMap[personId].items[itemId] ?? { subTotal: 0, totalShares: 0, shares: 0 };
+  };
 
   return {
     isLoading,
@@ -176,6 +202,7 @@ export const useGetReceipt = (id: string): UseGetReceiptResponse => {
     people,
     setPersonItemQuantity,
     personSubTotalMap,
+    getItemCostForPerson,
     getChargeForPerson,
     getTotalForPerson,
   };
@@ -184,6 +211,7 @@ export const useGetReceipt = (id: string): UseGetReceiptResponse => {
 export const pushReceipt = (receipt: Partial<ReceiptEntity>): ThenableReference => {
   if (!receipt.date) receipt.date = new Date().getTime();
   if (!receipt.total) receipt.total = 0;
+  if (!receipt.locked) receipt.locked = false;
   if (!receipt.taxCost) receipt.taxCost = 0;
   if (!receipt.tipCost) receipt.tipCost = 0;
   if (!receipt.items) receipt.items = {};
@@ -194,29 +222,30 @@ export const pushReceipt = (receipt: Partial<ReceiptEntity>): ThenableReference 
   return receiptsRef.push(receipt);
 };
 
-export const updateChargeValue = (receiptId: string, charge: ChargeType, valueString: string): Promise<void> =>
-  receiptsRef.child(receiptId).child(charge).set(currency(valueString).value);
+export const updateChargeValue = async (receiptId: string, charge: ChargeType, valueString: string) => {
+  await receiptsRef.child(receiptId).child(charge).set(currency(valueString).value);
+};
 
-export const updateChargeValueByPct = (receiptId: string, charge: ChargeType, percentString: string, subTotal: number): Promise<void> => {
+export const updateChargeValueByPct = async (receiptId: string, charge: ChargeType, percentString: string, subTotal: number) => {
   const value = currency(subTotal).multiply(parseFloat(percentString)).divide(100.0).value;
-  return receiptsRef.child(receiptId).child(charge).set(currency(value).value);
+  await receiptsRef.child(receiptId).child(charge).set(currency(value).value);
 };
 
-export const updateReceiptValue = (
+export const updateReceiptProperty = async (
   receiptId: string,
-  key: ChargeType | 'title' | 'total' | 'date',
-  value: string | number,
-): Promise<void> => {
-  return receiptsRef.child(receiptId).child(key).set(value);
+  key: ChargeType | 'title' | 'date' | 'locked',
+  value: string | number | boolean,
+) => {
+  await receiptsRef.child(receiptId).child(key).set(value);
 };
 
-export const updateReceiptItemValue = (
+export const updateReceiptItemValue = async (
   receiptId: string,
   itemId: string,
   key: 'name' | 'cost' | 'quantity',
   value: string | number,
-): Promise<void> => {
-  return receiptsRef.child(receiptId).child('items').child(itemId).child(key).set(value);
+) => {
+  await receiptsRef.child(receiptId).child('items').child(itemId).child(key).set(value);
 };
 
 export const getPersonCountForItem = (receipt: ReceiptEntity, itemId: string): number => {
@@ -228,3 +257,18 @@ export const getItemQuantityForPerson = (receipt: ReceiptEntity, personId: strin
   if (!receipt || !personId || !itemId) return 0;
   return ((receipt.personToItemQuantityMap ?? {})[personId] ?? {})[itemId]?.quantity ?? 0;
 };
+
+export async function updateReceiptFee(receipt: ReceiptEntity, feeName: string, feeAmount: number) {
+  const fees = receipt.fees ?? [];
+  if (!fees.some((fee) => fee.name === feeName)) {
+    fees.push({ name: feeName, amount: feeAmount });
+  } else {
+    for (const fee of fees) {
+      if (fee.name !== feeName) continue;
+
+      fee.amount = feeAmount;
+      break;
+    }
+  }
+  await receiptsRef.child(receipt.id).child('fees').set(fees);
+}

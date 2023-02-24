@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import { Avatar, Checkbox, Container, Fab, IconButton, ListItemText, ListSubheader, styled, useTheme } from '@mui/material';
+import { Avatar, ButtonBase, Checkbox, Container, Fab, IconButton, ListItemText, styled, useTheme } from '@mui/material';
 import Table from '@mui/material/Table';
 import React, { FunctionComponent } from 'react';
 import useEditTextModal from '../components/useEditTextModal';
@@ -34,40 +34,40 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import { nameToInitials } from '../functions/utils';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
 import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
-import StarBorder from '@mui/icons-material/StarBorder';
 import ListItem from '@mui/material/ListItem';
+import VenmoLogo from './venmo-logo.png';
+import Divider from '@mui/material/Divider';
 
-const highlightedRowColor = `#fff8d6`;
-
-const StyledTable = styled(Table)(({ theme }) => ({
-  whiteSpace: 'nowrap',
+const StyledTable = styled(Table)(() => ({
   // backgroundColor: "white",
   position: 'relative',
-  '& th': {
-    position: 'sticky',
-    top: 0,
-  },
   '.sticky-column': {
     position: 'sticky',
-    zIndex: 3,
+    zIndex: 1,
     left: 0,
   },
-  '.sticky-column-bg': {
-    backgroundColor: theme.palette.background.paper,
-  },
-  '.sticky-header': {
-    position: 'sticky',
-    zIndex: 2,
-    top: 0,
-  },
+  // '.sticky-column-bg': {
+  //   backgroundColor: '#1e1e1e',
+  // },
+  // '.sticky-header': {
+  //   position: 'sticky',
+  //   zIndex: 2,
+  //   top: 0,
+  // },
   '& td': {
     whiteSpace: 'nowrap',
     paddingTop: '8px',
     paddingBottom: '8px',
+    // backgroundColor: theme.palette.tableBg,
+  },
+  '& th': {
+    // whiteSpace: 'nowrap',
+    paddingTop: '8px',
+    paddingBottom: '8px',
+    // backgroundColor: theme.palette.tableBg,
   },
 }));
 
@@ -75,7 +75,7 @@ const getVenmoPaymentLink = ({
   txn = 'charge',
   user = '',
   amount,
-  note = 'Split by Rece',
+  note = `Split by Rece`,
 }: {
   txn?: 'pay' | 'charge';
   user?: string;
@@ -90,8 +90,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
 
   const { EditTextModal, showEditTextModal } = useEditTextModal();
 
-  const { receipt, items, subTotal, total, people, setPersonItemQuantity, personSubTotalMap, getChargeForPerson, getTotalForPerson } =
-    useGetReceipt(receiptId);
+  const { receipt, items, subTotal, total, people, setPersonItemQuantity } = useGetReceipt(receiptId);
 
   const { showAddItemModal, AddItemModal } = useAddItemModal({ receipt });
 
@@ -107,7 +106,13 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
         <StyledTable>
           <TableHead>
             <TableRow>
-              <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>{'Item'}</TableCell>
+              <TableCell
+                className={clsx('sticky-column', 'sticky-column-bg')}
+                sx={{ backgroundColor: theme.palette.tableBg }}
+                width={'100px'}
+              >
+                {'Item'}
+              </TableCell>
               <TableCell align={'right'} width={'1%'}>
                 {'Quantity'}
               </TableCell>
@@ -116,7 +121,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
               </TableCell>
               {people &&
                 Object.values(people).map((person) => (
-                  <TableCell key={person.id} align={'center'} width={'1%'} sx={{ minWidth: '100px' }} className={'sticky-header'}>
+                  <TableCell key={person.id} align={'center'} width={'1%'} sx={{ minWidth: '100px' }}>
                     {person.name}
                   </TableCell>
                 ))}
@@ -132,7 +137,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                   <TableRow
                     key={item.id}
                     sx={{
-                      backgroundColor: !isItemFull ? highlightedRowColor : undefined,
+                      backgroundColor: !isItemFull ? theme.palette.highlightedRowBg : theme.palette.tableBg,
                     }}
                   >
                     <TableCellButton
@@ -143,9 +148,13 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                           value: item.name,
                         })
                       }
-                      className={clsx('sticky-column')}
+                      disabled={!!receipt.locked}
+                      className={clsx('sticky-column', 'sticky-column-bg')}
                       sx={{
-                        backgroundColor: !isItemFull ? `${highlightedRowColor}` : 'white',
+                        maxWidth: '160px',
+                        overflowX: 'hidden',
+                        textOverflow: 'ellipsis',
+                        backgroundColor: !isItemFull ? theme.palette.highlightedRowBg : theme.palette.tableBg,
                       }}
                     >
                       {item.name}
@@ -159,6 +168,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                           value: String(item.quantity),
                         })
                       }
+                      disabled={!!receipt.locked}
                     >
                       {item.quantity}
                     </TableCellButton>
@@ -171,6 +181,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                           value: String(item.cost),
                         })
                       }
+                      disabled={!!receipt.locked}
                     >
                       {currency(item.cost).format()}
                     </TableCellButton>
@@ -191,34 +202,40 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                                 <IconButton
                                   size={'small'}
                                   onClick={() => setPersonItemQuantity(person.id, item.id, personItemQuantity - 1)}
-                                  disabled={personItemQuantity <= 0}
+                                  disabled={personItemQuantity <= 0 || !!receipt.locked}
                                   style={{
-                                    opacity: personItemQuantity <= 0 ? 0.5 : undefined,
+                                    opacity: personItemQuantity <= 0 || !!receipt.locked ? 0.5 : undefined,
                                   }}
                                 >
                                   <RemoveIcon />
                                 </IconButton>
                                 <Typography
-                                  sx={
-                                    personItemQuantity > 0
-                                      ? {
-                                          bgcolor: theme.palette.primary.main,
-                                          color: 'white',
-                                          px: '6px',
-                                          mx: '-2px',
-                                          borderRadius: '4px',
-                                        }
-                                      : undefined
-                                  }
+                                  sx={{
+                                    bgcolor:
+                                      personItemQuantity > 0
+                                        ? !receipt.locked
+                                          ? theme.palette.primary.main
+                                          : theme.palette.grey[600]
+                                        : undefined,
+                                    borderColor: !receipt.locked ? theme.palette.grey[300] : theme.palette.grey[600],
+                                    borderWidth: personItemQuantity <= 0 ? 2 : 0,
+                                    borderStyle: 'solid',
+                                    color: theme.palette.primary.contrastText,
+                                    // px: '6px',
+                                    mx: '-2px',
+                                    width: '22px',
+                                    height: '22px',
+                                    borderRadius: '2px',
+                                  }}
                                 >
-                                  {JSON.stringify(personItemQuantity)}
+                                  {personItemQuantity > 0 ? personItemQuantity : ''}
                                 </Typography>
                                 <IconButton
                                   size={'small'}
                                   onClick={() => setPersonItemQuantity(person.id, item.id, personItemQuantity + 1)}
-                                  disabled={isItemFull}
+                                  disabled={isItemFull || !!receipt.locked}
                                   style={{
-                                    opacity: isItemFull ? 0.5 : undefined,
+                                    opacity: isItemFull || !!receipt.locked ? 0.5 : undefined,
                                   }}
                                 >
                                   <AddIcon />
@@ -232,6 +249,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                                   margin: '-9px',
                                   '& .MuiSvgIcon-root': { fontSize: 28 },
                                 }}
+                                disabled={!!receipt.locked}
                               />
                             )}
                           </TableCell>
@@ -245,8 +263,9 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                         sx={{
                           margin: '-8px',
                         }}
+                        disabled={!!receipt.locked}
                       >
-                        <DeleteIcon color={'error'} />
+                        <DeleteIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>
@@ -262,13 +281,13 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
           </TableBody>
         </StyledTable>
       </TableContainer>
-      <Container maxWidth={'sm'} disableGutters>
+      <Container maxWidth={'xs'} disableGutters>
         <Box component={Paper}>
           <StyledTable sx={{ width: '100%' }}>
             <TableBody>
               <TableRow>
-                <TableCell className={clsx('sticky-column', 'sticky-column-bg')} sx={{ width: '30%' }}>
-                  Sub Total
+                <TableCell sx={{ width: '30%' }}>
+                  <b>Sub Total</b>
                 </TableCell>
                 <TableCell sx={{ width: '35%' }} />
                 <TableCell align={'right'} sx={{ width: '35%' }}>
@@ -276,7 +295,9 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Tax</TableCell>
+                <TableCell>
+                  <b>Tax</b>
+                </TableCell>
                 <TableCellButton
                   align={'right'}
                   onClick={() =>
@@ -286,6 +307,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                       value: String(((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
                     })
                   }
+                  disabled={!!receipt.locked}
                 >
                   {((currency(receipt.taxCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
                 </TableCellButton>
@@ -298,12 +320,15 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                       value: String(receipt.taxCost),
                     })
                   }
+                  disabled={!!receipt.locked}
                 >
                   {currency(receipt.taxCost).format()}
                 </TableCellButton>
               </TableRow>
               <TableRow>
-                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Tip</TableCell>
+                <TableCell>
+                  <b>Tip</b>
+                </TableCell>
                 <TableCellButton
                   align={'right'}
                   onClick={() =>
@@ -313,6 +338,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                       value: String(((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)),
                     })
                   }
+                  disabled={!!receipt.locked}
                 >
                   {((currency(receipt.tipCost).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}%
                 </TableCellButton>
@@ -325,41 +351,93 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
                       value: String(receipt.tipCost),
                     })
                   }
+                  disabled={!!receipt.locked}
                 >
                   {currency(receipt.tipCost).format()}
                 </TableCellButton>
               </TableRow>
+              {/* {receipt.fees?.map((fee) => ( */}
+              {/*   <TableRow key={fee.name}> */}
+              {/*     <TableCellButton */}
+              {/*       onClick={() => */}
+              {/*         showEditTextModal({ */}
+              {/*           setValue: (value) => updateReceiptFee(receipt, value, fee.amount), */}
+              {/*           title: 'Edit Fee Name', */}
+              {/*           value: fee.name, */}
+              {/*         }) */}
+              {/*       } */}
+              {/*       disabled={!!receipt.locked} */}
+              {/*     > */}
+              {/*       <b>{fee.name}</b> */}
+              {/*     </TableCellButton> */}
+              {/*     <TableCellButton */}
+              {/*       align={'right'} */}
+              {/*       onClick={() => */}
+              {/*         showEditTextModal({ */}
+              {/*           setValue: (value) => */}
+              {/*             updateReceiptFee( */}
+              {/*               receipt, */}
+              {/*               fee.name, */}
+              {/*               ((currency(fee.amount).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3), */}
+              {/*             ), */}
+              {/*           title: 'Edit Fee Percentage', */}
+              {/*           value: ((currency(fee.amount).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3), */}
+              {/*         }) */}
+              {/*       } */}
+              {/*       disabled={!!receipt.locked} */}
+              {/*     > */}
+              {/*       {((currency(fee.amount).value / currency(subTotal > 0 ? subTotal : 1).value) * 100.0).toFixed(3)}% */}
+              {/*     </TableCellButton> */}
+              {/*     <TableCellButton */}
+              {/*       align={'right'} */}
+              {/*       onClick={() => */}
+              {/*         showEditTextModal({ */}
+              {/*           setValue: (value) => updateReceiptFee(receipt, fee.name, currency(value).value), */}
+              {/*           title: 'Edit Fee Amount', */}
+              {/*           value: String(fee.amount), */}
+              {/*         }) */}
+              {/*       } */}
+              {/*       disabled={!!receipt.locked} */}
+              {/*     > */}
+              {/*       {currency(fee.amount).format()} */}
+              {/*     </TableCellButton> */}
+              {/*   </TableRow> */}
+              {/* ))} */}
+              {/* <TableRow> */}
+              {/*   <TableCell colSpan={100}> */}
+              {/*     <Button sx={{ m: '-8px' }} onClick={() => updateReceiptFee(receipt, `Fee ${(receipt.fees?.length ?? 0) + 1}`, 0)}> */}
+              {/*       Add Fee */}
+              {/*     </Button> */}
+              {/*   </TableCell> */}
+              {/* </TableRow> */}
               <SpacerRow />
               <TableRow>
-                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>Total</TableCell>
+                <TableCell className={clsx('sticky-column', 'sticky-column-bg')}>
+                  <b>Total</b>
+                </TableCell>
                 <TableCell />
-                <TableCell align={'right'}>{currency(total).format()}</TableCell>
+                <TableCell align={'right'}>
+                  <b>{currency(total).format()}</b>
+                </TableCell>
               </TableRow>
             </TableBody>
           </StyledTable>
         </Box>
       </Container>
-      <Container maxWidth={'sm'} disableGutters>
-        <Paper>
-          <List
-            sx={{ width: '100%', bgcolor: 'background.paper' }}
-            component="nav"
-            aria-labelledby="nested-list-subheader"
-            subheader={
-              <ListSubheader component="div" id="nested-list-subheader">
-                Individual Totals
-              </ListSubheader>
-            }
-          >
+      <Container maxWidth={'xs'} disableGutters>
+        <Paper sx={{ borderRadius: '4px' }}>
+          <List>
             {people.map((person) => (
               <PersonTotalListItem person={person} key={person.id} receiptId={receiptId} />
             ))}
           </List>
         </Paper>
       </Container>
-      <Fab color="primary" aria-label="add" sx={{ position: 'fixed', bottom: '40px', right: '40px' }} onClick={() => showAddItemModal()}>
-        <AddIcon />
-      </Fab>
+      {!receipt.locked && (
+        <Fab color="primary" aria-label="add" sx={{ position: 'fixed', bottom: '40px', right: '40px' }} onClick={() => showAddItemModal()}>
+          <AddIcon />
+        </Fab>
+      )}
       {EditTextModal}
       {AddItemModal}
     </Box>
@@ -367,8 +445,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
 };
 
 const PersonTotalListItem: FunctionComponent<{ person: PersonEntity; receiptId: string }> = ({ person, receiptId }) => {
-  const { receipt, items, subTotal, total, people, setPersonItemQuantity, personSubTotalMap, getChargeForPerson, getTotalForPerson } =
-    useGetReceipt(receiptId);
+  const { receipt, items, personSubTotalMap, getItemCostForPerson, getChargeForPerson, getTotalForPerson } = useGetReceipt(receiptId);
 
   const [open, setOpen] = React.useState(false);
 
@@ -383,24 +460,54 @@ const PersonTotalListItem: FunctionComponent<{ person: PersonEntity; receiptId: 
           <Avatar>{nameToInitials(person.name)}</Avatar>
         </ListItemAvatar>
         <ListItemText primary={person.name} secondary={currency(getTotalForPerson(person.id)).format()} />
+        <ButtonBase
+          sx={{ p: '8px', borderRadius: '8px', mr: '16px' }}
+          onClick={(e) => {
+            e.stopPropagation();
+            window.location.href = getVenmoPaymentLink({
+              amount: getTotalForPerson(person.id),
+              note: `${receipt.title} - Split by Rece`,
+            });
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <img src={VenmoLogo} width={40} height={40} alt={'Venmo logo'} />
+        </ButtonBase>
         {open ? <ExpandLess /> : <ExpandMore />}
       </ListItemButton>
       <Collapse in={open} timeout="auto" unmountOnExit>
         <List component="div" disablePadding>
-          <ListItem sx={{ pl: 4, display: 'flex' }}>
+          {Object.values(items ?? {})
+            .filter((item) => getItemQuantityForPerson(receipt, person.id, item.id) > 0)
+            .map((item) => {
+              const showItemCount = getItemCostForPerson(person.id, item.id).totalShares > getItemCostForPerson(person.id, item.id).shares;
+              return (
+                <ListItem key={item.id} sx={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                  <Typography sx={{ flex: 1 }}>
+                    {item.name}
+                    {showItemCount &&
+                      ` [${getItemCostForPerson(person.id, item.id).shares}/${getItemCostForPerson(person.id, item.id).totalShares}]`}
+                  </Typography>
+                  <Typography>{currency(getItemCostForPerson(person.id, item.id).subTotal).format()}</Typography>
+                </ListItem>
+              );
+            })}
+          <Divider sx={{ mx: 2 }} />
+          <ListItem sx={{ display: 'flex' }}>
             <Typography sx={{ flex: 1 }}>Sub Total</Typography>
-            <Typography>{currency(personSubTotalMap[person.id]).format()}</Typography>
+            <Typography>{currency((personSubTotalMap[person.id] ?? {}).subTotal).format()}</Typography>
           </ListItem>
-          <ListItem sx={{ pl: 4, display: 'flex' }}>
+          <ListItem sx={{ display: 'flex' }}>
             <Typography sx={{ flex: 1 }}>Tax</Typography>
             <Typography>{currency(getChargeForPerson('taxCost', person.id)).format()}</Typography>
           </ListItem>
-          <ListItem sx={{ pl: 4, display: 'flex' }}>
+          <ListItem sx={{ display: 'flex' }}>
             <Typography sx={{ flex: 1 }}>Tip</Typography>
             <Typography>{currency(getChargeForPerson('tipCost', person.id)).format()}</Typography>
           </ListItem>
         </List>
       </Collapse>
+      <Divider />
     </React.Fragment>
   );
 };

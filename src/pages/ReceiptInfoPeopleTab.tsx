@@ -12,8 +12,7 @@ import { Avatar, Button, ButtonBase, IconButton, TextField } from '@mui/material
 import { nameToInitials } from '../functions/utils';
 import DeleteIcon from '@mui/icons-material/Delete';
 import Typography from '@mui/material/Typography';
-
-type AddPersonProps = { name: string };
+import Container from '@mui/material/Container';
 
 const ReceiptInfoPeopleTab = () => {
   const { receiptId } = useParams<ReceiptInfoPathProps>();
@@ -55,7 +54,9 @@ const ReceiptInfoPeopleTab = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    // <Container sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+    <Container maxWidth={'xs'} disableGutters>
       <Paper>
         <List>
           {people.map((person) => (
@@ -73,34 +74,37 @@ const ReceiptInfoPeopleTab = () => {
                       setValue: (value) => updatePerson({ ...person, name: value }),
                     });
                   }}
+                  disabled={!!receipt.locked}
                 >
                   <Typography variant={'h5'} sx={{ flex: 1 }}>
                     {person.name}
                   </Typography>
                 </ButtonBase>
-                <IconButton size={'small'} edge="end" onClick={() => removePerson(person.id)}>
-                  <DeleteIcon color={'error'} />
+                <IconButton size={'small'} edge="end" onClick={() => removePerson(person.id)} disabled={!!receipt.locked}>
+                  <DeleteIcon />
                 </IconButton>
               </Box>
             </ListItem>
           ))}
-          <ListItem>
-            <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
-              <ListItemAvatar></ListItemAvatar>
-              <TextField
-                variant={'standard'}
-                inputRef={newPersonFieldRef}
-                onKeyDown={handleOnKeyDown}
-                placeholder={'Add Person'}
-                autoFocus
-              />
-              <Button onClick={handleAddPerson}>Add</Button>
-            </Box>
-          </ListItem>
+          {!receipt.locked && (
+            <ListItem>
+              <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', gap: 2 }}>
+                <ListItemAvatar></ListItemAvatar>
+                <TextField
+                  variant={'standard'}
+                  inputRef={newPersonFieldRef}
+                  onKeyDown={handleOnKeyDown}
+                  placeholder={'Add Person'}
+                  autoFocus
+                />
+                <Button onClick={handleAddPerson}>Add</Button>
+              </Box>
+            </ListItem>
+          )}
         </List>
       </Paper>
       {EditTextModal}
-    </Box>
+    </Container>
   );
 };
 
