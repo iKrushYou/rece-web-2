@@ -44,6 +44,7 @@ export type ItemEntity = {
 export type PersonEntity = {
   id: string;
   name: string;
+  paid: boolean;
 };
 
 export const useGetReceipts = (): {
@@ -271,4 +272,9 @@ export async function updateReceiptFee(receipt: ReceiptEntity, feeName: string, 
     }
   }
   await receiptsRef.child(receipt.id).child('fees').set(fees);
+}
+
+export async function updatePerson(receipt: ReceiptEntity, person: PersonEntity) {
+  if (!receipt || !person) return;
+  await receiptsRef.child(receipt.id).child('people').child(person.id).set(person);
 }

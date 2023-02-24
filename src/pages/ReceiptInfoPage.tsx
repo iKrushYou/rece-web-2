@@ -31,20 +31,22 @@ const ReceiptInfoPage: FunctionComponent = () => {
         {receipt && (
           <Box>
             <Box sx={{ marginBottom: '20px' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant={'h3'} sx={{ flex: 1, position: 'relative' }}>
-                  <ButtonBase
-                    sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                    onClick={() =>
-                      showEditTextModal({
-                        setValue: (value) => updateReceiptProperty(receiptId, 'title', value),
-                        title: 'Edit Receipt Name',
-                        value: receipt.title,
-                      })
-                    }
-                  />
-                  {receipt.title}
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: '8px' }}>
+                <ButtonBase
+                  sx={{ flex: 1, textAlign: 'inherit' }}
+                  onClick={() =>
+                    showEditTextModal({
+                      setValue: (value) => updateReceiptProperty(receiptId, 'title', value),
+                      title: 'Edit Receipt Name',
+                      value: receipt.title,
+                    })
+                  }
+                  disabled={!!receipt.locked}
+                >
+                  <Typography variant={'h3'} sx={{ width: '100%' }}>
+                    {receipt.title}
+                  </Typography>
+                </ButtonBase>
                 <Box>
                   <IconButton onClick={() => updateReceiptProperty(receiptId, 'locked', !receipt.locked)}>
                     {receipt.locked ? <LockIcon /> : <LockOpenIcon />}
@@ -65,6 +67,7 @@ const ReceiptInfoPage: FunctionComponent = () => {
                   await updateReceiptProperty(receiptId, 'date', newDate);
                 }}
                 variant={'standard'}
+                disabled={!!receipt.locked}
               />
             </Box>
             <Tabs

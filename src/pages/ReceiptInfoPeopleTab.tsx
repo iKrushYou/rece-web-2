@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { useParams } from 'react-router-dom';
 import { ReceiptInfoPathProps } from '../core/BaseRouter';
 import useEditTextModal from '../components/useEditTextModal';
-import { PersonEntity, receiptsRef, useGetReceipt } from '../functions/firebase';
+import { receiptsRef, updatePerson, useGetReceipt } from '../functions/firebase';
 import React, { useRef } from 'react';
 import Paper from '@mui/material/Paper';
 import List from '@mui/material/List';
@@ -32,11 +32,6 @@ const ReceiptInfoPeopleTab = () => {
     if (!confirm("Are you sure you'd like to remove this person?")) return;
     if (!receipt || !personId) return;
     await receiptsRef.child(receipt.id).child('people').child(personId).remove();
-  };
-
-  const updatePerson = async (person: PersonEntity) => {
-    if (!receipt || !person) return;
-    await receiptsRef.child(receipt.id).child('people').child(person.id).set(person);
   };
 
   const handleAddPerson = async () => {
@@ -71,7 +66,7 @@ const ReceiptInfoPeopleTab = () => {
                     showEditTextModal({
                       title: 'Edit Person',
                       value: person.name,
-                      setValue: (value) => updatePerson({ ...person, name: value }),
+                      setValue: (value) => updatePerson(receipt, { ...person, name: value }),
                     });
                   }}
                   disabled={!!receipt.locked}

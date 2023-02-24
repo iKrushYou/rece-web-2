@@ -10,6 +10,7 @@ import {
   receiptsRef,
   updateChargeValue,
   updateChargeValueByPct,
+  updatePerson,
   updateReceiptItemValue,
   useGetReceipt,
 } from '../functions/firebase';
@@ -40,6 +41,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import ListItem from '@mui/material/ListItem';
 import VenmoLogo from './venmo-logo.png';
 import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
 
 const StyledTable = styled(Table)(() => ({
   // backgroundColor: "white",
@@ -282,7 +284,7 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
         </StyledTable>
       </TableContainer>
       <Container maxWidth={'xs'} disableGutters>
-        <Box component={Paper}>
+        <Paper sx={{ overflow: 'hidden' }}>
           <StyledTable sx={{ width: '100%' }}>
             <TableBody>
               <TableRow>
@@ -422,11 +424,11 @@ const ReceiptInfoItemsTab: FunctionComponent = () => {
               </TableRow>
             </TableBody>
           </StyledTable>
-        </Box>
+        </Paper>
       </Container>
       <Container maxWidth={'xs'} disableGutters>
-        <Paper sx={{ borderRadius: '4px' }}>
-          <List>
+        <Paper sx={{ borderRadius: '4px', overflow: 'hidden' }}>
+          <List sx={{ py: 0 }}>
             {people.map((person) => (
               <PersonTotalListItem person={person} key={person.id} receiptId={receiptId} />
             ))}
@@ -456,23 +458,41 @@ const PersonTotalListItem: FunctionComponent<{ person: PersonEntity; receiptId: 
   return (
     <React.Fragment key={person.id}>
       <ListItemButton onClick={handleClick}>
+        <Checkbox
+          sx={{ mr: '16px' }}
+          checked={person.paid}
+          onMouseDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+          onChange={async (e) => {
+            e.stopPropagation();
+            await updatePerson(receipt, { ...person, paid: !person.paid });
+          }}
+        />
         <ListItemAvatar>
           <Avatar>{nameToInitials(person.name)}</Avatar>
         </ListItemAvatar>
         <ListItemText primary={person.name} secondary={currency(getTotalForPerson(person.id)).format()} />
-        <ButtonBase
-          sx={{ p: '8px', borderRadius: '8px', mr: '16px' }}
-          onClick={(e) => {
-            e.stopPropagation();
-            window.location.href = getVenmoPaymentLink({
-              amount: getTotalForPerson(person.id),
-              note: `${receipt.title} - Split by Rece`,
-            });
-          }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <img src={VenmoLogo} width={40} height={40} alt={'Venmo logo'} />
-        </ButtonBase>
+        {person.paid ? (
+          <Button color={'error'} variant={'outlined'} disableRipple sx={{ mr: '10px' }}>
+            PAID
+          </Button>
+        ) : (
+          <ButtonBase
+            sx={{ p: '8px', borderRadius: '8px', mr: '16px' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = getVenmoPaymentLink({
+                amount: getTotalForPerson(person.id),
+                note: `${receipt.title} - Split by Rece`,
+              });
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <img src={VenmoLogo} width={40} height={40} alt={'Venmo logo'} />
+          </ButtonBase>
+        )}
         {open ? <ExpandLess /> : <ExpandMore />}
       </ListItemButton>
       <Collapse in={open} timeout="auto" unmountOnExit>
